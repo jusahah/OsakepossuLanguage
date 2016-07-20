@@ -1,0 +1,23 @@
+VAR tobuy = NOKIA;
+VAR tosell = ELISA;
+
+if TOTAL_BALANCE > 2105 
+	BUY_PERCENTAGE(75, NOKIA); 
+	return;
+endif  
+
+if CASH_BALANCE == 65 
+	SELL_ALL_OF(ELISA); 
+	return;
+endif 
+
+if VALUE_AT_DATE(16.09.2015, ATRIA) <= CASH_BALANCE
+	return;
+endif	 
+
+if EXTERNAL(urheilupalvelu, 0) > 8
+	if CASH_BALANCE == 65 
+		SELL_ALL_OF(ELISA); 
+		return;
+	endif 
+endif		
