@@ -5,6 +5,7 @@ var _ = require('lodash');
 module.exports = function(stockData) {
 
 	var getCommands = function(account, rules, externalFuns) {
+		// SYNC
 		return executeRules(stockData, account, rules, externalFuns);
 	}
 
@@ -19,6 +20,8 @@ function ReturnExpression() {}
 ReturnExpression.prototype = new Error();
 
 // Ditch ifClause
+// This is raised in case we hit a execution error inside ifClause
+// Outcome of raising this is that the ifClause is immediately exited and dumped.
 function DitchIfClause() {}
 DitchIfClause.prototype = new Error();
 
@@ -86,7 +89,7 @@ function executeRules(stockData, account, rules, externalFuns) {
 	var aliases = rules.declarations || {};
 
 	var code = rules.code;
-
+	// Bindings object travels along the execution flow
 	var bindings = {
 		aliases: aliases,
 		collectedActions: [],
@@ -133,9 +136,14 @@ function executeIf(ifClause, bindings) {
 
 function processIfBody(ifBody, bindings) {
 	console.log("Processing if body");
+	// Must be STAT_LIST
 	if (ifBody.nodeType === 'STAT_LIST') {
-		processStatements(ifBody.statements, bindings);
+		return processStatements(ifBody.statements, bindings);
 	}
+
+	throw new Error("ProcessIfBody did not match: " + ifBody.nodeType);
+
+
 }
 
 function processStatements(statements, bindings) {
