@@ -1,17 +1,18 @@
 VAR tobuy = NOKIA;
 VAR tosell = ELISA;
+VAR maxToSpend = CASH_BALANCE - (CASH_BALANCE - 100);
 
 if TOTAL_BALANCE > 2105 
 	BUY_PERCENTAGE(75, NOKIA); 
 	return;
 endif  
 
-if CASH_BALANCE == 65 
+if CASH_BALANCE == (65 + TOTAL_BALANCE) 
 	SELL_ALL_OF(ELISA); 
 	return;
 endif 
 
-if VALUE_AT_DATE(16.09.2015, ATRIA) <= CASH_BALANCE
+if VALUE_AT_DATE(16.09.2015, ATRIA) <= (CASH_BALANCE - 5)
 	return;
 endif	 
 

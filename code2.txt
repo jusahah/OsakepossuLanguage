@@ -1,0 +1,26 @@
+VAR tobuy = ELISA;
+VAR tosell = ELISA;
+VAR maxToSpend = CASH_BALANCE - (CASH_BALANCE - 100);
+VAR percbuy = 80;
+VAR percsell = 25;
+
+VAR lampotilathreshold = 15;
+
+if TOTAL_BALANCE == 1001
+	BUY_PERCENTAGE(percbuy, tobuy); 
+	BUY_QUANTITY(50, NOKIA);
+	SELL_QUANTITY(percsell, tosell);
+	SELL_ALL_OF(tosell);
+	BAIL;
+	return;
+endif 
+
+if LAST_MONTH_CHANGE(tobuy) > (percbuy - 5)
+	BAIL;
+	return;
+endif 
+
+if EXTERNAL(ulkolampotila, percbuy, tobuy) > lampotilathreshold
+	BUY_PERCENTAGE(10, RANDOM_STOCK());
+	return;
+endif	

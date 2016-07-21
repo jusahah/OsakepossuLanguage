@@ -7,6 +7,7 @@
 
 	function processLines(lines) {
 		var obj = {
+			nodeType: 'STAT_LIST',
 			statements: []
 		};
 		for (var i = 0; i < lines.length; i++) {
@@ -20,16 +21,16 @@
 		var stockdeclarations = {};
 		for (var i = 0; i < declarations.length; i++) {
 			var decobj = declarations[i][0];
-			stockdeclarations[decobj.variable] = decobj.stock;
+			stockdeclarations[decobj.variable] = decobj.binding;
 		}
 
 		return stockdeclarations;	
 	}
 
-	function processArgs(additionals) {
+	function processArgs(name, additionals) {
 		if (additionals[0].length === 0) {
 			/* Only one arg */
-			return [additionals[1]];
+			return [name, additionals[1]];
 		}
 
 		
@@ -40,6 +41,7 @@
 		}
 
 		argadditionals.push(additionals[1]);
+		argadditionals.unshift(name);
 
 		return argadditionals;
 	}	
@@ -58,101 +60,108 @@ code
 
 
 variableDeclaration
-	= "VAR" _ varname:string _ "=" _ s:stock _ ";"
+	= "VAR" _ varname:string _ "=" _ a:expr _ ";"
 	{
-		return {variable: varname, stock: s}
+		return {nodeType: 'VAR_DECL', variable: varname.value, binding: a}
 	}
 
 ifClause
-	= "if" _ c1:clause _ comp:comparison _ c2:clause _ e:expression _ "endif" _
+	= "if" _ c1:clause _ comp:comparison _ c2:clause _ e:ifBody _ "endif" _
 	{
 		return {
+			nodeType: 'CONTROL',
 			controlFlow: 'IF',
 			clause1: c1,
 			comparison: comp,
 			clause2: c2,
-			expressionIfTrue: e
+			bodyIfTrue: e
 		}
 	}
 
 clause
 	= GETTER_EXPR
-	/ integer 
+	/ expr
 
 GETTER_EXPR
 	= "TOTAL_BALANCE" 
 	{
-		return {valueType: 'BALANCE'}
+		return {nodeType: 'GETTER', valueType: 'TOTAL_BALANCE'}
 	}
 
 	/ "STOCK_BALANCE"
 	{
-		return {valueType: 'STOCK'}
+		return {nodeType: 'GETTER', valueType: 'STOCK_BALANCE'}
 	}
 
 	/ "CASH_BALANCE" 
 	{
-		return {valueType: 'CASH'}
+		return {nodeType: 'GETTER', valueType: 'CASH_BALANCE'}
 	}
 
 	/ "HAS_STOCK" "(" s:stock ")" 
 	{
-		return {getter: HAS_STOCK, stock: s}
+		return {nodeType: 'GETTER_FUN', getter: HAS_STOCK, stock: s}
 	}
 
 	/ "STOCK_VALUE" "(" s:stock ")" 
 	{
-		return {getter: 'STOCK_VALUE', stock: s}
+		return {nodeType: 'GETTER_FUN',getter: 'STOCK_VALUE', stock: s}
 	}
 
 	/ "LAST_HOUR_CHANGE" "(" s:stock ")" 
 	{
-		return {getter: 'LAST_HOUR_CHANGE', stock: s}
+		return {nodeType: 'GETTER_FUN',getter: 'LAST_HOUR_CHANGE', stock: s}
 	}
 
 	/ "CHANGE_SINCE_MORNING" "(" s:stock ")" 
 	{
-		return {getter: 'CHANGE_SINCE_MORNING', stock: s}
+		return {nodeType: 'GETTER_FUN',getter: 'CHANGE_SINCE_MORNING', stock: s}
 	}
 
 	/ "LAST_WEEK_CHANGE" "(" s:stock ")" 
 	{
-		return {getter: 'LAST_WEEK_CHANGE', stock: s}
+		return {nodeType: 'GETTER_FUN',getter: 'LAST_WEEK_CHANGE', args: [s]}
 	}
 
 	/ "LAST_MONTH_CHANGE" "(" s:stock ")" 
 	{
-		return {getter: 'LAST_MONTH_CHANGE', stock: s}
+		return {nodeType: 'GETTER_FUN',getter: 'LAST_MONTH_CHANGE', args: [s]}
 	}
 
 	/ "VALUE_AT_DATE" "(" date:date "," _ s:stock ")" 
 	{
-		return {getter: 'VALUE_AT_DATE', date: date, stock: s}
+		return {nodeType: 'GETTER_FUN', getter: 'VALUE_AT_DATE', date: date, stock: s}
 	}
 
 	/ "QUANTITY_HELD" "(" s:stock ")" 	
 	{
-		return {getter: 'QUANTITY_HELD', stock: s}
+		return {nodeType: 'GETTER_FUN', getter: 'QUANTITY_HELD', stock: s}
 	}
 
 	/ "CURRENT_PROFIT_FROM" "(" s:stock ")" 	
 	{
-		return {getter: 'CURRENT_PROFIT_FROM', stock: s}
+		return {nodeType: 'GETTER_FUN', getter: 'CURRENT_PROFIT_FROM', stock: s}
 	}
 
 	/ "CURRENT_PROFIT_PERC_FROM" "(" s:stock ")" 	
 	{
-		return {getter: 'CURRENT_PROFIT_PERC_FROM', stock: s}
+		return {nodeType: 'GETTER_FUN', getter: 'CURRENT_PROFIT_PERC_FROM', stock: s}
 	}
+
+	/ "RANDOM_STOCK" "()"
+	{
+		return {nodeType: 'GETTER_FUN', getter: 'RANDOM_STOCK'}
+	}	
 
 	/* User defined funcs */
 
 	/ "EXTERNAL" "(" name:string "," _ args:additionalArgToExternal ")"
 	{
 		return {
+			nodeType: 'GETTER_FUN',
 			getter: 'EXTERNAL',
 			name: name,
-			args: processArgs(args)
+			args: processArgs(name, args)
 
 		}
 	}
@@ -169,79 +178,117 @@ arg
 	/ string
 	/ integer
 
+stockalias
+	= GETTER_EXPR
+	/ string
+
 date 
 	= d:integer "." m:integer "." y:integer
 	{
-		return {day: d, month: m, year: y}
+		return {nodeType: 'LITERAL', valueType: 'DATE', day: d, month: m, year: y}
 	}	
 
 stock
-	= s:[A-Z]+ 
+	= s:string 
 	{
-		return s.join("");
-	}		
+		return s
+		return {nodeType: 'LITERAL', valueType: 'STRING', value: s.join("")}
+	}	
 
-expression
-	= ifClause
-	/ lines:(lineexpression ";" _)*
+/* No if clause allowed */
+expr
+	= "("? _ e:minusExpr _ ")"?
 	{
-		return processLines(lines);
+		return {
+			nodeType: 'MATH_EXPR',
+			expr: e
+
+		}
+	}
+	/ "("? _ e:plusExpr _ ")"?
+	{
+		return {
+			nodeType: 'MATH_EXPR',
+			expr: e
+
+		}
+	}
+
+	/ "("? _ a:arg _ ")"? {return a}
+
+
+minusExpr
+	= a1:arg _ "-" _ a2:expr {return {e1: a1, op: 'MINUS', e2: a2}}
+
+plusExpr		
+	= a1:arg _ "+" _ a2:arg {return {e1: a1, op: 'PLUS', e2: a2}}
+
+mulExpr		
+	= a1:arg _ "*" _ a2:arg {return {e1: a1, op: 'MUL', e2: a2}}
+
+divExpr		
+	= a1:arg _ "/" _ a2:arg {return {e1: a1, op: 'DIV', e2: a2}}
+
+ifBody
+	= statements:(statement ";" _)*
+	{
+		return processLines(statements);
 	}
 
 
 /* Note that order matters with === and == */
 comparison
-	= "<="
-	/ ">="
-	/ ">"
-	/ "<"
-	/ "==="	
-	/ "=="
-	/ "="
+	= "<=" {return {nodeType: 'COMPARISON', value: '<='}}
+	/ ">=" {return {nodeType: 'COMPARISON', value: '>='}}
+	/ ">" {return {nodeType: 'COMPARISON', value: '>'}}
+	/ "<" {return {nodeType: 'COMPARISON', value: '<'}}
+	/ "==="	 {return {nodeType: 'COMPARISON', value: '=='}}
+	/ "==" {return {nodeType: 'COMPARISON', value: '=='}}
+	/ "=" {return {nodeType: 'COMPARISON', value: '=='}}
 
 
 
-lineexpression
+statement
 	= action
-	/ "return"	{return {controlFlow: 'RETURN'}}
+	/ "return"	{return {nodeType: 'CONTROL',controlFlow: 'RETURN'}}
 
 action 
 	= "BUY_QUANTITY" a:amountstockclause 
 	{
-		return {action: 'BUY_QUANTITY', amount: a.amount, stock: a.stock}
+		return {nodeType: 'STAT',action: 'BUY_QUANTITY', args: [a.amount, a.stock]}
 	}
 
 	/ "BUY_PERCENTAGE" a:amountstockclause 
 	{
-		return {action: 'BUY_PERCENTAGE', amount: a.amount, stock: a.stock}
+		return {nodeType: 'STAT',action: 'BUY_PERCENTAGE', args: [a.amount, a.stock]}
 	}
 
 	/ "SELL_QUANTITY" a:amountstockclause 
 	{
-		return {action: 'SELL_QUANTITY', amount: a.amount, stock: a.stock}
+		return {nodeType: 'STAT',action: 'SELL_QUANTITY', args: [a.amount, a.stock]}
 	}
 
 	/ "SELL_ALL_OF" s:stockclause 
 	{
-		return {action: 'SELL_ALL', stock: s}
+		return {nodeType: 'STAT',action: 'SELL_ALL', args: [s]}
 	}
 
 	/ "BAIL"
 	{
-		return {action: 'BAIL'}
+		return {nodeType: 'STAT',action: 'BAIL', args: []}
 	}
 
 amountstockclause
-	= "(" i:integer "," _ s:stock ")" {return {amount: i, stock: s}}
+	= "(" i:arg "," _ s:stockalias ")" {return {amount: i, stock: s}}
 
 stockclause
 	= "(" s:stock ")" {return s;}	
 
 integer "integer"
-  = digits:[0-9]+ { return {valueType: 'INT', value: parseInt(digits.join(""), 10) }}
+  = digits:[0-9]+ { return {nodeType: 'LITERAL', valueType: 'INT', value: parseInt(digits.join(""), 10) }}
 
 string
-	= s:[a-zA-Z]+ { return s.join("")}
+	= s:[a-zA-Z]+ { return {nodeType: 'LITERAL', valueType: 'STRING', value: s.join("")}}
 
 // optional whitespace
 _  = [ \t\r\n]* {return null}
