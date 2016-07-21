@@ -9,7 +9,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "concat-stream": "^1.5.1",
     "jison": "file:jison",
+    "json-buffer": "^2.0.11",
     "lodash": "^4.13.1",
     "pegjs": "^0.9.0"
   }
