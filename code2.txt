@@ -22,5 +22,8 @@ endif
 
 if EXTERNAL(ulkolampotila, percbuy, tobuy) > lampotilathreshold
 	BUY_PERCENTAGE(10, RANDOM_STOCK());
-	return;
+endif	
+
+if STOCK_BALANCE >= 0
+	SELL_ALL_OF(RANDOM_STOCK());
 endif	

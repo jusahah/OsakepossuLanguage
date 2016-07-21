@@ -9,8 +9,10 @@ function respond(data) {
 
 process.stdin.pipe(concat(function (stdin) {
   var argsObj = JSON.parse(stdin.toString());
-  
+
+  // Do logic here, for example doing async http call
+
   setTimeout(function() {
-  	respond({value: 16});
-  }, 2500);
+  	respond({value: 65});
+  }, 500);
 }));

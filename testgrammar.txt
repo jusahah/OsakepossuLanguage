@@ -270,7 +270,7 @@ action
 
 	/ "SELL_ALL_OF" s:stockclause 
 	{
-		return {nodeType: 'STAT',action: 'SELL_ALL', args: [s]}
+		return {nodeType: 'STAT',action: 'SELL_ALL_OF', args: [s]}
 	}
 
 	/ "BAIL"
@@ -282,7 +282,7 @@ amountstockclause
 	= "(" i:arg "," _ s:stockalias ")" {return {amount: i, stock: s}}
 
 stockclause
-	= "(" s:stock ")" {return s;}	
+	= "(" s:stockalias ")" {return s;}	
 
 integer "integer"
   = digits:[0-9]+ { return {nodeType: 'LITERAL', valueType: 'INT', value: parseInt(digits.join(""), 10) }}

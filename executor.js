@@ -1,9 +1,11 @@
 var _ = require('lodash');
 
+// THIS MODULE IS TO BE RUN ON AWS LAMBDA CONTAINER
+// Do not run it on typical web-facing node.js server, it'll block badly.
 module.exports = function(stockData) {
 
 	var getCommands = function(account, rules, externalFuns) {
-		executeRules(stockData, account, rules, externalFuns);
+		return executeRules(stockData, account, rules, externalFuns);
 	}
 
 	return {
@@ -15,6 +17,10 @@ module.exports = function(stockData) {
 // Return expression
 function ReturnExpression() {}
 ReturnExpression.prototype = new Error();
+
+// Ditch ifClause
+function DitchIfClause() {}
+DitchIfClause.prototype = new Error();
 
 // Execution errors
 function IfClauseExpected() {}
@@ -49,7 +55,19 @@ var getterFuns = {
 		if (_.has(bindings.externalFuns, name)) {
 			// Okay here we go
 			var extF = bindings.externalFuns[name];
-			return extF(args); // Must be SYNC!
+			var res;
+			try {
+				console.log("TRYING EXTERNAL CALL");
+				res = extF(args); // Must be SYNC!
+			} catch (e) {
+				// External call failed
+				// Log failure here to user's datafile
+				console.log("EXTERNAL CALL THREW UP");
+				throw new DitchIfClause();
+			}
+
+			return res;
+			
 		}
 
 		throw "No external function present: " + name;
@@ -82,7 +100,12 @@ function executeRules(stockData, account, rules, externalFuns) {
 		try {
 			executeIf(ifClause, bindings);
 		} catch (e) {
-			if (e instanceof ReturnExpression) {
+			if (e instanceof DitchIfClause) {
+				// We had a problem executing this ifClause
+				return true; // We just move to next clause
+			}
+			else if (e instanceof ReturnExpression) {
+				// We met RETURN-token
 				return false; // Explicitly stops forEach iteration!
 			} else {
 				throw e; // Logical error or smth, we don't know how to handle it.
