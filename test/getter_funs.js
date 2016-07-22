@@ -37,7 +37,7 @@ describe('Getter funs', function() {
   		// Set the rules
   		var tree = parser.parse(
   		`
-  			VAR teststock = KONE;
+  			var teststock = KONE;
 
   			if HAS_STOCK(NOKIA) == 1
   				SELL_ALL_OF(NOKIA);
@@ -86,10 +86,10 @@ describe('Getter funs', function() {
   		// Set the rules
   		var tree = parser.parse(
   		`
-  			VAR teststock = ATRIA;
-  			VAR sellq  = 40; 
+  			var teststock = ATRIA;
+  			var sellq  = 40; 
 
-  			if STOCK_VALUE(teststock) < 7.70
+  			if STOCK_VALUE(teststock) < (5.70 + 2)
   				return;
   			endif
   			
@@ -97,7 +97,7 @@ describe('Getter funs', function() {
   				SELL_ALL_OF(teststock);
   			endif
 
-  			if STOCK_VALUE(NOKIA) > 5.99
+  			if STOCK_VALUE(NOKIA) > (6.99 - 1.01111)
   				SELL_QUANTITY(sellq, HUHTAMAKI);
   			endif
   		`
@@ -117,5 +117,79 @@ describe('Getter funs', function() {
   	});
   });
 
+  describe('CHANGE_LAST_HOUR', function() {
+  	it('should parse and execute successfully', function() {
+  		// Set the stockData
+  		var executor = executorConstructor({
+  			NOKIA: {
+  				current: 8.00,
+  				today: [6.00, 7.00, 7.00, 8.00] // +14.28%
+  			},
+  			ATRIA: {
+  				current: 7.10,
+  				today: [7.50, 7.10] // -5.33%
+  			}
+
+  		});
+
+  		// Set the account
+  		var account = {};
+
+  		// Set the rules
+  		var tree = parser.parse(
+  		`
+  			var teststock = ATRIA;
+  			var sellq  = (40 - 7); 
+
+  			if CHANGE_LAST_HOUR(teststock) < -7.5
+  				return;
+  			endif
+
+   			if CHANGE_LAST_HOUR(teststock) > -10.000
+  				SELL_ALL_OF(ELISA);
+  			endif 
+
+  			if CHANGE_LAST_HOUR(teststock) == 0
+  				return;
+  			endif
+
+  			if CHANGE_LAST_HOUR(teststock) > (3 - 1)
+  				return;
+  			endif
+
+  			if CHANGE_LAST_HOUR(teststock) <= -4.00
+  				SELL_ALL_OF(teststock);
+  			endif
+
+  			if CHANGE_LAST_HOUR(NOKIA) < 14.0
+  				BAIL;
+  			endif
+
+  			if CHANGE_LAST_HOUR(NOKIA) < -14.00
+  				BAIL;
+  				return;
+  			endif
+
+  			if CHANGE_LAST_HOUR(NOKIA) <= 15.00
+  				SELL_QUANTITY(sellq, HUHTAMAKI);
+  			endif
+  		`
+  		);
+  		console.log("RUNNING STOCK_VALUE");
+  		var commands = executor.getCommands(account, tree, externalFuns);
+  		console.log("CMDS back")
+  		console.log(commands);
+
+  		assert.deepEqual(
+		[ 
+		  { action: 'SELL_ALL_OF', args: [ 'ELISA' ] },
+		  { action: 'SELL_ALL_OF', args: [ 'ATRIA' ] },
+		  { action: 'SELL_QUANTITY', args: [ 33, 'HUHTAMAKI' ] } 
+  		]
+		, commands);
+
+
+  	});
+  });
 
 });

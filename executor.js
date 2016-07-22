@@ -97,6 +97,24 @@ var getterFuns = {
 		var stockData = bindings.stockData;
 
 		return stockData[stockname].current;
+	},
+	CHANGE_LAST_HOUR: function(args, bindings) {
+		var stockname = args[0];
+		var stockData = bindings.stockData;
+
+		var stockToday = stockData[stockname].today;
+
+		if (stockToday.length === 1) {
+			// Opening val of day
+			return 0;
+		}
+
+		var lastTwoPrices = _.takeRight(stockToday, 2);
+
+		return (lastTwoPrices[1] / lastTwoPrices[0] - 1) * 100;
+
+
+		
 	}
 }
 
@@ -228,8 +246,8 @@ function processExpression(expr, bindings) {
 
 	// Literal matching
 	if (expr.nodeType === 'LITERAL') {
-		if (expr.valueType === 'INT') return expr.value;
-		if (expr.valueType === 'FLOAT') return expr.value;
+		if (expr.valueType === 'INT') return expr.neg ? expr.value * (-1) : expr.value;
+		if (expr.valueType === 'FLOAT') return expr.neg ? expr.value * (-1) : expr.value;
 		if (expr.valueType === 'STRING') return processString(expr.value, bindings);
 		if (expr.valueType === 'DATE') return processDate(expr.value, bindings);
 	} 

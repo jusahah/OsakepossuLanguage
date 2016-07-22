@@ -70,7 +70,7 @@ alwaysClause
 
 
 variableDeclaration
-	= "VAR" _ varname:string _ "=" _ a:expr _ ";"
+	= "var" _ varname:string _ "=" _ a:expr _ ";"
 	{
 		return {nodeType: 'VAR_DECL', variable: varname.value, binding: a}
 	}
@@ -118,9 +118,9 @@ GETTER_EXPR
 		return {nodeType: 'GETTER_FUN',getter: 'STOCK_VALUE', args: [s]}
 	}
 
-	/ "LAST_HOUR_CHANGE" "(" s:stock ")" 
+	/ "CHANGE_LAST_HOUR" "(" s:stock ")" 
 	{
-		return {nodeType: 'GETTER_FUN',getter: 'LAST_HOUR_CHANGE', stock: s}
+		return {nodeType: 'GETTER_FUN',getter: 'CHANGE_LAST_HOUR', args: [s]}
 	}
 
 	/ "CHANGE_SINCE_MORNING" "(" s:stock ")" 
@@ -128,12 +128,12 @@ GETTER_EXPR
 		return {nodeType: 'GETTER_FUN',getter: 'CHANGE_SINCE_MORNING', stock: s}
 	}
 
-	/ "LAST_WEEK_CHANGE" "(" s:stock ")" 
+	/ "CHANGE_LAST_WEEK" "(" s:stock ")" 
 	{
 		return {nodeType: 'GETTER_FUN',getter: 'LAST_WEEK_CHANGE', args: [s]}
 	}
 
-	/ "LAST_MONTH_CHANGE" "(" s:stock ")" 
+	/ "CHANGE_LAST_MONTH" "(" s:stock ")" 
 	{
 		return {nodeType: 'GETTER_FUN',getter: 'LAST_MONTH_CHANGE', args: [s]}
 	}
@@ -300,15 +300,24 @@ stockclause
 	= "(" s:stockalias ")" {return s;}	
 
 integer "integer"
-  = intdigits:[0-9]+ "." decimaldigits:[0-9]+ 
+  = neg:"-"? intdigits:[0-9]+ "." decimaldigits:[0-9]+ 
   {
   	return {
   		nodeType: 'LITERAL',
   		valueType: 'FLOAT',
-  		value: parseFloat(intdigits.join("") + "." + decimaldigits.join(""), 10)
+  		value: parseFloat(intdigits.join("") + "." + decimaldigits.join(""), 10),
+  		neg: !!neg
   	}
   }
-  / digits:[0-9]+ { return {nodeType: 'LITERAL', valueType: 'INT', value: parseInt(digits.join(""), 10) }}
+  / neg:"-"? digits:[0-9]+ 
+  { 
+  	return {
+  		nodeType: 'LITERAL', 
+  		valueType: 'INT', 
+  		value: parseInt(digits.join(""), 10),
+  		neg: !!neg 
+  	}
+  }
 
 
 string

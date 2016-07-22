@@ -122,7 +122,7 @@ describe('Getter variables', function() {
   		// Set the rules
   		var tree = parser.parse(
   		`
-  			VAR tosell = ATRIA;
+  			var tosell = ATRIA;
 
   			if CASH_BALANCE >= 10
 				SELL_QUANTITY(5, tosell);

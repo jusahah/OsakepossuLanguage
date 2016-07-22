@@ -1,9 +1,11 @@
-VAR tobuy = HUHTAMAKI;
-VAR tosell = ELISA;
-VAR maxToSpend = CASH_BALANCE - (CASH_BALANCE - 100);
-VAR percbuy = 80;
-VAR percsell = 25;
-VAR lampotilathreshold = 15;
+run hourly;
+
+var tobuy = HUHTAMAKI;
+var tosell = ELISA;
+var maxToSpend = CASH_BALANCE - (CASH_BALANCE - 100);
+var percbuy = 80;
+var percsell = 25;
+var lampotilathreshold = 15;
 
 always BAIL;
 always BUY_PERCENTAGE(10, tobuy);
