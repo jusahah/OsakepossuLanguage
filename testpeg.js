@@ -26,7 +26,13 @@ var tree = parser.parse(`
 
 `);
 
-console.log(JSON.stringify(tree, null, 2));
+var tree2 = parser.parse(`
+	if 6 - 4 - 2 + 0 == 0
+		BAIL;
+	endif 
+`);
+
+console.log(JSON.stringify(tree2, null, 2));
 
 console.log("------")
 console.log("---------------------");

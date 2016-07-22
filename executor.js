@@ -346,6 +346,12 @@ function processExpression(expr, bindings) {
 		} 
 		else if (expr.expr.op === 'MINUS') {
 			return leftSide - rightSide;
+		} 
+		else if (expr.expr.op === 'MUL') {
+			return leftSide * rightSide;
+		}
+		else if (expr.expr.op === 'DIV') {
+			return leftSide / rightSide;
 		}
 	}
 

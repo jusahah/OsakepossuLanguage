@@ -269,20 +269,40 @@ expr
 		}
 	}
 
+	/ "("? _ e:mulExpr _ ")"?
+	{
+		return {
+			nodeType: 'MATH_EXPR',
+			expr: e
+
+		}
+	}
+
+	/ "("? _ e:divExpr _ ")"?
+	{
+		return {
+			nodeType: 'MATH_EXPR',
+			expr: e
+
+		}
+	}
+
 	/ "("? _ a:arg _ ")"? {return a}
 
+argexpr
+	= "(" _ minusExpr _ ")"
 
 minusExpr
 	= a1:arg _ "-" _ a2:expr {return {e1: a1, op: 'MINUS', e2: a2}}
 
 plusExpr		
-	= a1:arg _ "+" _ a2:arg {return {e1: a1, op: 'PLUS', e2: a2}}
+	= a1:arg _ "+" _ a2:expr {return {e1: a1, op: 'PLUS', e2: a2}}
 
 mulExpr		
-	= a1:arg _ "*" _ a2:arg {return {e1: a1, op: 'MUL', e2: a2}}
+	= a1:arg _ "*" _ a2:expr {return {e1: a1, op: 'MUL', e2: a2}}
 
 divExpr		
-	= a1:arg _ "/" _ a2:arg {return {e1: a1, op: 'DIV', e2: a2}}
+	= a1:arg _ "/" _ a2:expr {return {e1: a1, op: 'DIV', e2: a2}}
 
 ifBody
 	= statements:(statement ";" _)*
