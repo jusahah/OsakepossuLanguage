@@ -56,7 +56,7 @@ start
 		}
 	}
 code
-	= (alwaysClause / ifClause)*
+	= (alwaysClause / ifClause / ifClauseCheck)*
 
 alwaysClause
 	= "always" _ a:action ";" _
@@ -76,21 +76,52 @@ variableDeclaration
 	}
 
 ifClause
-	= "if" _ c1:clause _ comp:comparison _ c2:clause _ e:ifBody _ "endif" _
+	= "if" head:ifHead e:ifBody _ "endif" _
 	{
 		return {
 			nodeType: 'CONTROL',
 			controlFlow: 'IF',
-			clause1: c1,
-			comparison: comp,
-			clause2: c2,
+			clause1: head.c1,
+			comparison: head.comp,
+			clause2: head.c2,
 			bodyIfTrue: e
 		}
 	}
 
+ifClauseCheck
+	= "if" _ checkobj:CHECK_EXPR _ e:ifBody _ "endif" _
+	{
+		return {
+			nodeType: 'CONTROL',
+			controlFlow: 'CHECK',
+			toCheck: checkobj,
+			bodyIfTrue: e
+		}
+	}	
+
+ifHead
+	= _ c1:clause _ comp:comparison _ c2:clause _
+	{
+		return {
+			c1: c1,
+			comp: comp,
+			c2: c2
+		}
+	}
+
+
 clause
 	= GETTER_EXPR
 	/ expr
+
+CHECK_EXPR
+	= "INBETWEEN" "(" value:arg "," _ lowbound:arg "," _ highbound:arg ")"
+	{
+		return {
+			checkerName: 'INBETWEEN',
+			args: [value, lowbound, highbound]
+		}
+	} 	
 
 GETTER_EXPR
 	= "TOTAL_BALANCE" 
@@ -108,29 +139,38 @@ GETTER_EXPR
 		return {nodeType: 'GETTER', valueType: 'CASH_BALANCE'}
 	}
 
-	/ "HAS_STOCK" "(" s:stock ")" 
+	/ "HAS_STOCK" "(" s:stockalias ")" 
 	{
 		return {nodeType: 'GETTER_FUN', getter: 'HAS_STOCK', args: [s]}
 	}
 
-	/ "STOCK_VALUE" "(" s:stock ")" 
+	/ "STOCK_VALUE" "(" s:stockalias ")" 
 	{
 		return {nodeType: 'GETTER_FUN',getter: 'STOCK_VALUE', args: [s]}
 	}
 
-	/ "CHANGE_LAST_HOUR" "(" s:stock ")" 
+	/ "CHANGE_LAST_HOUR" "(" s:stockalias ")" 
 	{
 		return {nodeType: 'GETTER_FUN',getter: 'CHANGE_LAST_HOUR', args: [s]}
 	}
 
-	/ "CHANGE_SINCE_MORNING" "(" s:stock ")" 
+	/ "CHANGE_SINCE_MORNING" "(" s:stockalias ")" 
 	{
 		return {nodeType: 'GETTER_FUN',getter: 'CHANGE_SINCE_MORNING', args: [s]}
 	}
 
+	/ "CHANGE_SINCE_DAYS" "(" i:arg "," _ s:stockalias ")"
+	{
+		return {
+			nodeType: 'GETTER_FUN',
+			getter: 'CHANGE_SINCE_DAYS',
+			args: [i, s]
+		}
+	} 
+
 	/ "CHANGE_LAST_WEEK" "(" s:stock ")" 
 	{
-		return {nodeType: 'GETTER_FUN',getter: 'LAST_WEEK_CHANGE', args: [s]}
+		return {nodeType: 'GETTER_FUN',getter: 'CHANGE_LAST_WEEK', args: [s]}
 	}
 
 	/ "CHANGE_LAST_MONTH" "(" s:stock ")" 
@@ -250,6 +290,15 @@ ifBody
 		return processLines(statements);
 	}
 
+comparisonfun
+	= GETTER_EXPR
+	{
+		return {
+			nodeType: 'CUSTOM_COMPARISON',
+			compType: 'BETWEEN',
+			args: [lowbound, topbound]
+		}
+	}
 
 /* Note that order matters with === and == */
 comparison

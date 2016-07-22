@@ -6,6 +6,13 @@ module.exports = function(stockData) {
 
 	var getCommands = function(account, rules, externalFuns) {
 		// SYNC
+		console.log("/////////////////////////////////////")
+		console.log("/////////////////////////////////////")
+		console.log("/////////////////////////////////////")
+		console.log("/////////////////////////////////////")
+		console.log("/////////////////////////////////////")
+		console.log("/////////////////////////////////////")
+
 		return executeRules(stockData, account, rules, externalFuns);
 	}
 
@@ -28,6 +35,13 @@ DitchControlClause.prototype = new Error();
 // Execution errors
 function IfClauseExpected() {}
 IfClauseExpected.prototype = new Error();
+
+var checkerFuns = {
+	INBETWEEN: function(args) {
+		// [v, lowerbound, upperbound]
+		return args[0] >= args[1] && args[0] <= args[2];
+	}
+}
 
 var getterFuns = {
 	VALUE_AT_DATE: function(stock, bindings) {
@@ -128,7 +142,24 @@ var getterFuns = {
 		var first   = _.head(stockToday);
 
 		return (current / first - 1) * 100;	
+	},
+	CHANGE_SINCE_DAYS: function(args, bindings) {
+		var dayoffset = args[0];
+		var stockname = args[1];
+		var stockHistory = bindings.stockData[stockname].history;
+		// This is the point! Every time we can not do checkup (due missing data or etc)
+		// we bail out and let the outer loop move into next controlClause
 
+		// BAILING OUT is always done by throwing DitchControlClause!
+
+		if (stockHistory.length < dayoffset) {
+			throw new DitchControlClause("CHANGE_SINCE_DAYS fail: Not enough history data.");	
+		}
+
+		var current = bindings.stockData[stockname].current;
+		var backThen = stockHistory[dayoffset-1];
+
+		return (current / backThen - 1) * 100;
 
 	}
 }
@@ -155,12 +186,17 @@ function executeRules(stockData, account, rules, externalFuns) {
 			if (controlClause.controlFlow === 'IF') {
 				executeIf(controlClause, bindings);
 			}
+			else if (controlClause.controlFlow === 'CHECK') {
+				executeCheck(controlClause, bindings);
+			}
 			else if (controlClause.controlFlow === 'ALWAYS') {
 				executeAlways(controlClause, bindings);
 			}
+
 		} catch (e) {
 			if (e instanceof DitchControlClause) {
 				// We had a problem executing this ifClause
+				// Log it here to user's account
 				return true; // We just move to next clause
 			}
 			else if (e instanceof ReturnExpression) {
@@ -183,10 +219,33 @@ function executeAlways(alwaysClause, bindings) {
 
 }
 
+function executeCheck(checkClause, bindings) {
+	console.log("-----------")
+	console.log("Execute check: " + checkClause.controlFlow);
+	console.log("-----------")	
+
+	var f = checkerFuns[checkClause.toCheck.checkerName];
+
+	var evalledArgs = _.map(checkClause.toCheck.args, function(checkArg) {
+		return processExpression(checkArg, bindings);
+	});	
+
+	if (f(evalledArgs)) {
+		console.log("Check true");
+		processIfBody(checkClause.bodyIfTrue, bindings);	
+	}
+
+
+}
+
 function executeIf(ifClause, bindings) {
 	if (ifClause.controlFlow !== 'IF') throw new IfClauseExpected();
 
-	console.log("Execute if");
+
+	console.log("-----------")
+	console.log("Execute if: " + ifClause.controlFlow);
+	console.log("-----------")
+
 
 	if (processComparisonOperation(ifClause.clause1, ifClause.comparison, ifClause.clause2, bindings)) {
 		// If expression was true, run the expression
@@ -211,7 +270,7 @@ function processStatement(statement, bindings) {
 	if (statement.nodeType === 'STAT') {
 
 		staticCheckOfArgs(statement.action, statement.args); // Throws "InvalidArgs";
-
+		// Collapse later into "processArgs" or smth
 		var evalledArgs = _.map(statement.args, function(statArg) {
 			return processExpression(statArg, bindings);
 		});
