@@ -125,7 +125,7 @@ GETTER_EXPR
 
 	/ "CHANGE_SINCE_MORNING" "(" s:stock ")" 
 	{
-		return {nodeType: 'GETTER_FUN',getter: 'CHANGE_SINCE_MORNING', stock: s}
+		return {nodeType: 'GETTER_FUN',getter: 'CHANGE_SINCE_MORNING', args: [s]}
 	}
 
 	/ "CHANGE_LAST_WEEK" "(" s:stock ")" 

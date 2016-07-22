@@ -111,10 +111,25 @@ var getterFuns = {
 
 		var lastTwoPrices = _.takeRight(stockToday, 2);
 
-		return (lastTwoPrices[1] / lastTwoPrices[0] - 1) * 100;
+		return (lastTwoPrices[1] / lastTwoPrices[0] - 1) * 100;	
+	},
+	CHANGE_SINCE_MORNING: function(args, bindings) {
+		var stockname = args[0];
+		var stockData = bindings.stockData;
+
+		var stockToday = stockData[stockname].today;
+
+		if (stockToday.length === 1) {
+			// Opening val of day
+			return 0;
+		}
+
+		var current = _.last(stockToday);
+		var first   = _.head(stockToday);
+
+		return (current / first - 1) * 100;	
 
 
-		
 	}
 }
 
