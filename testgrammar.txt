@@ -314,6 +314,7 @@ comparison
 
 statement
 	= action
+	/ "noop" {return {nodeType: 'CONTROL', controlFlow: 'NOOP'}}
 	/ "return"	{return {nodeType: 'CONTROL',controlFlow: 'RETURN'}}
 
 action 

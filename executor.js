@@ -279,6 +279,9 @@ function processStatement(statement, bindings) {
 	} else if (statement.nodeType === 'CONTROL') {
 		if (statement.controlFlow === 'RETURN') {
 			throw new ReturnExpression(); // Finish AST walk
+		} 
+		else if (statement.controlFlow === 'NOOP') {
+			bindings.collectedActions.push({action: 'NOOP', args: []});
 		}
 	}
 
