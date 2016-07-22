@@ -116,4 +116,55 @@ describe('Control tokens', function() {
   	});
 
   });
+
+  describe('ALWAYS control token', function() {
+  	it('should parse and execute correctly', function() {
+
+  		var executor = executorConstructor({
+  			NOKIA: {
+  				current: 8.00,
+  				today: [6.00, 7.00, 7.00, 8.00] // +14.28%
+  			},
+
+  		});
+
+  		// Set the account
+  		var account = {
+  			TOTAL_BALANCE: 150
+  		};
+
+  		// Set the rules
+  		var tree = parser.parse(
+  		`
+  			var a = 10;
+  			var b = HUHTAMAKI;
+
+			always BAIL;
+			always BUY_QUANTITY(a, b);	
+
+			if a == 11
+				return;
+			endif
+
+			if a == 10
+				noop;
+				return;
+				noop;
+			endif				
+  		`
+  		);
+
+  		// Should produce two NOOPs as third clause is never run
+  		var commands = executor.getCommands(account, tree, externalFuns);
+  		console.log(commands);
+
+  		assert.deepEqual([
+  			{ action: 'BAIL', args: [] } ,
+  			{ action: 'BUY_QUANTITY', args: [10, 'HUHTAMAKI'] } ,
+  			{ action: 'NOOP', args: [] } 
+  		], commands);
+
+  	});
+
+  });
 });
