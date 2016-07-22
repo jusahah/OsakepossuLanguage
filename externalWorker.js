@@ -14,5 +14,5 @@ process.stdin.pipe(concat(function (stdin) {
 
   setTimeout(function() {
   	respond({value: 65});
-  }, 500);
+  }, 0);
 }));

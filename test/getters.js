@@ -9,6 +9,7 @@ var executorConstructor = require(__dirname + '/../executor');
 var externalFuns = require(__dirname + '/../externalFuns');
 
 describe('Getter variables', function() {
+	return;
   describe('TOTAL_BALANCE', function() {
   	it('should parse and execute successfully', function() {
   		// Set the stockData

@@ -19,11 +19,11 @@ module.exports = function(stockData) {
 function ReturnExpression() {}
 ReturnExpression.prototype = new Error();
 
-// Ditch ifClause
-// This is raised in case we hit a execution error inside ifClause
-// Outcome of raising this is that the ifClause is immediately exited and dumped.
-function DitchIfClause() {}
-DitchIfClause.prototype = new Error();
+// Ditch controlClause
+// This is raised in case we hit a execution error inside controlClause
+// Outcome of raising this is that the controlClause is immediately exited and dumped.
+function DitchControlClause() {}
+DitchControlClause.prototype = new Error();
 
 // Execution errors
 function IfClauseExpected() {}
@@ -66,7 +66,7 @@ var getterFuns = {
 				// External call failed
 				// Log failure here to user's datafile
 				console.log("EXTERNAL CALL THREW UP");
-				throw new DitchIfClause();
+				throw new DitchControlClause();
 			}
 
 			return res;
@@ -79,6 +79,24 @@ var getterFuns = {
 	RANDOM_STOCK: function() {
 		// Do a lottery here of all stocks
 		return 'NOKIA'; // For testing
+	},
+	HAS_STOCK: function(args, bindings) {
+		var stockname = args[0];
+
+		var stockportfolio = bindings.account.portfolio;
+
+		var foundObj = _.find(stockportfolio, function(stockheld) {
+			return stockheld.stock === stockname;
+		});
+
+		return foundObj ? 1 : 0;
+	},
+	STOCK_VALUE: function(args, bindings) {
+		var stockname = args[0];
+
+		var stockData = bindings.stockData;
+
+		return stockData[stockname].current;
 	}
 }
 
@@ -99,11 +117,16 @@ function executeRules(stockData, account, rules, externalFuns) {
 	}
 	// Code contains zero or more ifClauses!
 	// For now, there are no other nodes possible
-	_.forEach(code, function(ifClause) {
+	_.forEach(code, function(controlClause) {
 		try {
-			executeIf(ifClause, bindings);
+			if (controlClause.controlFlow === 'IF') {
+				executeIf(controlClause, bindings);
+			}
+			else if (controlClause.controlFlow === 'ALWAYS') {
+				executeAlways(controlClause, bindings);
+			}
 		} catch (e) {
-			if (e instanceof DitchIfClause) {
+			if (e instanceof DitchControlClause) {
 				// We had a problem executing this ifClause
 				return true; // We just move to next clause
 			}
@@ -116,10 +139,15 @@ function executeRules(stockData, account, rules, externalFuns) {
 			}
 		}
 	});
-	console.log("Collected actions when done");
-	console.log(bindings.collectedActions);
+
 
 	return bindings.collectedActions;
+}
+
+function executeAlways(alwaysClause, bindings) {
+	console.log("Execute always");
+	processStatement(alwaysClause.alwaysAction, bindings);
+
 }
 
 function executeIf(ifClause, bindings) {
@@ -146,23 +174,28 @@ function processIfBody(ifBody, bindings) {
 
 }
 
+function processStatement(statement, bindings) {
+	if (statement.nodeType === 'STAT') {
+
+		staticCheckOfArgs(statement.action, statement.args); // Throws "InvalidArgs";
+
+		var evalledArgs = _.map(statement.args, function(statArg) {
+			return processExpression(statArg, bindings);
+		});
+		console.log("---------PUSH: " + statement.action);
+		bindings.collectedActions.push({action: statement.action, args: evalledArgs});
+	} else if (statement.nodeType === 'CONTROL') {
+		if (statement.controlFlow === 'RETURN') {
+			throw new ReturnExpression(); // Finish AST walk
+		}
+	}
+
+}
+
 function processStatements(statements, bindings) {
 	_.forEach(statements, function(statement) {
 		console.log("Processing single statement: " + statement.nodeType);
-		if (statement.nodeType === 'STAT') {
-
-			staticCheckOfArgs(statement.action, statement.args); // Throws "InvalidArgs";
-
-			var evalledArgs = _.map(statement.args, function(statArg) {
-				return processExpression(statArg, bindings);
-			});
-			
-			bindings.collectedActions.push({action: statement.action, args: evalledArgs});
-		} else if (statement.nodeType === 'CONTROL') {
-			if (statement.controlFlow === 'RETURN') {
-				throw new ReturnExpression(); // Finish AST walk
-			}
-		}
+		processStatement(statement, bindings);
 	});
 }
 
@@ -196,6 +229,7 @@ function processExpression(expr, bindings) {
 	// Literal matching
 	if (expr.nodeType === 'LITERAL') {
 		if (expr.valueType === 'INT') return expr.value;
+		if (expr.valueType === 'FLOAT') return expr.value;
 		if (expr.valueType === 'STRING') return processString(expr.value, bindings);
 		if (expr.valueType === 'DATE') return processDate(expr.value, bindings);
 	} 

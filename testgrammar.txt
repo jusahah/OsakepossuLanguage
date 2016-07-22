@@ -56,7 +56,17 @@ start
 		}
 	}
 code
-	= ifClause* 
+	= (alwaysClause / ifClause)*
+
+alwaysClause
+	= "always" _ a:action ";" _
+	{
+		return {
+			nodeType: 'CONTROL',
+			controlFlow: 'ALWAYS',
+			alwaysAction: a 
+		}
+	}	 
 
 
 variableDeclaration
@@ -100,12 +110,12 @@ GETTER_EXPR
 
 	/ "HAS_STOCK" "(" s:stock ")" 
 	{
-		return {nodeType: 'GETTER_FUN', getter: HAS_STOCK, stock: s}
+		return {nodeType: 'GETTER_FUN', getter: 'HAS_STOCK', args: [s]}
 	}
 
 	/ "STOCK_VALUE" "(" s:stock ")" 
 	{
-		return {nodeType: 'GETTER_FUN',getter: 'STOCK_VALUE', stock: s}
+		return {nodeType: 'GETTER_FUN',getter: 'STOCK_VALUE', args: [s]}
 	}
 
 	/ "LAST_HOUR_CHANGE" "(" s:stock ")" 
@@ -131,6 +141,11 @@ GETTER_EXPR
 	/ "VALUE_AT_DATE" "(" date:date "," _ s:stock ")" 
 	{
 		return {nodeType: 'GETTER_FUN', getter: 'VALUE_AT_DATE', date: date, stock: s}
+	}
+
+	/ "CHANGE_SINCE" "(" date:date "," _ s:stock ")"
+	{
+		return {nodeType: 'GETTER_FUN', getter: 'CHANGE_SINCE', date: date, stock: s}
 	}
 
 	/ "QUANTITY_HELD" "(" s:stock ")" 	
@@ -285,7 +300,16 @@ stockclause
 	= "(" s:stockalias ")" {return s;}	
 
 integer "integer"
-  = digits:[0-9]+ { return {nodeType: 'LITERAL', valueType: 'INT', value: parseInt(digits.join(""), 10) }}
+  = intdigits:[0-9]+ "." decimaldigits:[0-9]+ 
+  {
+  	return {
+  		nodeType: 'LITERAL',
+  		valueType: 'FLOAT',
+  		value: parseFloat(intdigits.join("") + "." + decimaldigits.join(""), 10)
+  	}
+  }
+  / digits:[0-9]+ { return {nodeType: 'LITERAL', valueType: 'INT', value: parseInt(digits.join(""), 10) }}
+
 
 string
 	= s:[a-zA-Z]+ { return {nodeType: 'LITERAL', valueType: 'STRING', value: s.join("")}}
