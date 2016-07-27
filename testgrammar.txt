@@ -45,18 +45,51 @@
 
 		return argadditionals;
 	}	
+
+	function processHours(hours) {
+		var hoursproc = []
+		for (var i = 0; i < hours.length; i++) {
+			hoursproc.push(hours[i][0]);
+			
+		}
+
+		return hoursproc;	
+
+	}
 }
 
 start
-  = _ declarations:(variableDeclaration _)* _ code:code _
+  = _ runtimes:runClause? _ declarations:(variableDeclaration _)* _ code:code _
 	{
 		return {
+			runtimes: 	{
+				nodeType: 'CONTROL',
+				controlFlow: 'RUN',
+				times: runtimes
+			},
 			declarations: processDeclarations(declarations),
 			code: code
 		}
 	}
 code
 	= (alwaysClause / ifClause / ifClauseCheck)*
+
+runClause
+	= "run" _ interval:("daily" / "hourly" / runhours) _ ";"
+	{ 
+		return interval;
+	}
+	
+
+runhours
+	= hours:(hour " "*)+
+	{
+		return processHours(hours);
+	}
+
+
+hour
+	= "10" / "11" / "12" / "13" / "14" / "15" / "16" / "17" / "18"
 
 alwaysClause
 	= "always" _ a:action ";" _

@@ -113,6 +113,147 @@ describe('Misc tests', function() {
   	});
   });
 
+  describe('Run expressions', function() {
+    it('should run daily / hourly', function() {
+      // Set the stockData
+      var executor = executorConstructor({
+        NOKIA: [1,1,1,1,1,1,1],
+        ELISA: [2,2,2,2,2,2,2]
+      });
+
+      // Set the account
+      var account = {
+        TOTAL_BALANCE: 15
+        // Rest are irrelevant for this test
+      };
+
+      /////////////////////////////////////////////////////////////
+      // First part 
+
+      // Set the rules
+      var tree = parser.parse(
+      `
+        run hourly;
+
+        always BAIL;
+
+      `
+      );
+      // Should return as its hourly
+      var commands = executor.getCommands(account, tree, externalFuns);
+      console.log(commands)
+      assert.deepEqual([
+        { action: 'BAIL', args: [] } ,
+      ], commands);
+
+      // Should return as its hourly
+      var commands1 = executor.getCommands(account, tree, externalFuns, 11);
+      console.log(commands1)
+      assert.deepEqual([
+        { action: 'BAIL', args: [] } ,
+      ], commands1);
+
+      /////////////////////////////////////////////////////////////
+      // Second part 
+
+      var tree2 = parser.parse(
+      `
+        run daily;
+
+        always BAIL;
+
+      `
+      );
+      // Should be filled as it is 18.00
+      var commands2 = executor.getCommands(account, tree2, externalFuns, 18);
+      console.log(commands2)
+      assert.deepEqual([
+        { action: 'BAIL', args: [] } ,
+      ], commands2);
+
+      // Should be empty as its not 18.00
+      var commands3 = executor.getCommands(account, tree2, externalFuns, 16);
+      console.log(commands3)
+      assert.deepEqual([
+        // Empty
+      ], commands3);
+
+    });
+  });
+  describe('Run expressions p.2', function() {
+    it('should run custom hours', function() {
+      // Set the stockData
+      var executor = executorConstructor({
+        NOKIA: [1,1,1,1,1,1,1],
+        ELISA: [2,2,2,2,2,2,2]
+      });
+
+      // Set the account
+      var account = {
+        TOTAL_BALANCE: 15
+        // Rest are irrelevant for this test
+      };
+
+      /////////////////////////////////////////////////////////////
+      // First part 
+
+      // Set the rules
+      var tree = parser.parse(
+      `
+        run 10 11 12 13;
+
+        always BAIL;
+
+      `
+      ); 
+      // Should return as hour is not specified (by default means any hour is ok)
+      var commands = executor.getCommands(account, tree, externalFuns);
+      console.log(commands)
+      assert.deepEqual([
+        { action: 'BAIL', args: [] } ,
+      ], commands);
+
+      // Should return empty as hour is 14
+      commands = executor.getCommands(account, tree, externalFuns, 14);
+      console.log(commands)
+      assert.deepEqual([
+        // empty
+      ], commands);
+
+      // Should return as its 11.00
+      var commands1 = executor.getCommands(account, tree, externalFuns, 11);
+      console.log(commands1)
+      assert.deepEqual([
+        { action: 'BAIL', args: [] } ,
+      ], commands1);
+
+      /////////////////////////////////////////////////////////////
+      // Second part 
+
+      var tree2 = parser.parse(
+      `
+        run 12 16;
+
+        always BAIL;
+
+      `
+      );
+      // Should be filled as it is 12.00
+      var commands2 = executor.getCommands(account, tree2, externalFuns, 12);
+      console.log(commands2)
+      assert.deepEqual([
+        { action: 'BAIL', args: [] } ,
+      ], commands2);
+
+      // Should be empty as its not 12.00 or 16.00
+      var commands3 = executor.getCommands(account, tree2, externalFuns, 15);
+      console.log(commands3)
+      assert.deepEqual([
+        // Empty
+      ], commands3);
+
+    });
+  });
 });
 
 

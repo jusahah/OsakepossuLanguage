@@ -4,7 +4,7 @@ var _ = require('lodash');
 // Do not run it on typical web-facing node.js server, it'll block badly.
 module.exports = function(stockData) {
 
-	var getCommands = function(account, rules, externalFuns) {
+	var getCommands = function(account, rules, externalFuns, currentHour) {
 		// SYNC
 		console.log("/////////////////////////////////////")
 		console.log("/////////////////////////////////////")
@@ -13,7 +13,7 @@ module.exports = function(stockData) {
 		console.log("/////////////////////////////////////")
 		console.log("/////////////////////////////////////")
 
-		return executeRules(stockData, account, rules, externalFuns);
+		return executeRules(stockData, account, rules, externalFuns, currentHour);
 	}
 
 	return {
@@ -164,11 +164,26 @@ var getterFuns = {
 	}
 }
 
-function executeRules(stockData, account, rules, externalFuns) {
+function executeRules(stockData, account, rules, externalFuns, currentHour) {
 
 	console.log("Starting to execute rules");
 
-	var aliases = rules.declarations || {};
+	var aliases  = rules.declarations || {};
+	var runTimes = rules.runtimes.times;
+
+	// First of all we check our runtimes contains current hour
+
+	// If currentHour set AND its part of the runTimes list, we run. 
+	// Otherwise we return empty cmd set.
+	if (currentHour && runTimes && runTimes !== 'hourly') {
+		if (runTimes === 'daily') runTimes = ["18"];
+
+		if (runTimes.indexOf(currentHour.toString().trim()) === -1) {
+			// No run at this point!
+			// COLLECTEDACTIONS
+			return []; // Return empty collectedActions!
+		}
+	}
 
 	var code = rules.code;
 	// Bindings object travels along the execution flow
