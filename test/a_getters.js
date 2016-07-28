@@ -148,6 +148,7 @@ describe('Getter variables', function() {
 
   		var commands = executor.getCommands(account, tree, externalFuns);
   		// Copy from terminal and paste here
+      console.log(commands);
   		assert.deepEqual(
   			[ 
   			  { action: 'SELL_QUANTITY', args: [ 5, 'ATRIA' ] },
