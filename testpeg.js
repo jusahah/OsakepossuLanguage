@@ -19,6 +19,7 @@ var tree = parser.parse(`
   			if INBETWEEN(33, 32, 34)
   				BUY_QUANTITY(5, NOKIA);
   				SELL_ALL_OF(NOKIA);
+  				SELL_QUANTITY(3, ELISA);
   			endif
 
   			if 6 > 5
@@ -44,7 +45,7 @@ var commands = executorConstructor(stockData).getCommands(account, tree, externa
 console.log(commands);
 
 // Decorate with actual prices
-var changesToPortfolio = resolveChanges(commands, stockData, account);
+var changesToPortfolio = _.compact(resolveChanges(commands, stockData, account));
 console.log(changesToPortfolio);
 
 
@@ -177,8 +178,6 @@ function transformCommandIntoPortfolioEvents(command, stockData, account) {
 		}
 	}
 	else if (command.action === 'BUY_QUANTITY') {
-
-		
 
 		var buyAmount = command.args[0];		
 		var stockname = command.args[1];
