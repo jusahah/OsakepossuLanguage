@@ -17,6 +17,7 @@ var parser = PEG.buildParser(grammar);
 
 var tree = parser.parse(`
   			if INBETWEEN(33, 32, 34)
+  				BUY_QUANTITY(5, NOKIA);
   				SELL_ALL_OF(NOKIA);
   			endif
 
@@ -101,23 +102,29 @@ function transformCommandIntoPortfolioEvents(command, stockData, account) {
 	*/
 
 	if (command.action === 'BAIL') {
-
-
+		console.log("Account stocks in BAIL")
+		console.log(account.stocks);
 		// We need to sell all stocks at the current price.
 		// BAILs are transformed into SELL_QUANTITYs by plugging in amount
-		return _.map(account.stocks, function(stockHolding) {
+
+		// We have map over a copy of stocks as we mutate the original along the way
+		return _.map(_.slice(account.stocks), function(stockHolding) {
+
+			console.log("Stock holding in BAIL");
+			console.log(stockHolding);
 			
 			var stockname = stockHolding.name;
 			var amount    = stockHolding.amount;
 			var price     = stockData[stockname].current;
 
 			// So we get price * amount euros to our cash balance
-
+			updateStockHolding(account, stockname, 0);
 			addToAccountCash(account, price*amount);
 			return {
 				event: 'SELL_QUANTITY',
 				price: price,
 				amount: amount,
+				cashvalue: price * amount,
 				stock: stockname
 			}
 		});
@@ -133,18 +140,18 @@ function transformCommandIntoPortfolioEvents(command, stockData, account) {
 		if (!currentHolding) return null;
 
 		var amount = currentHolding.amount;
+		updateStockHolding(account, stockname, 0);
 		addToAccountCash(account, price*amount);
 		return {
 			event: 'SELL_QUANTITY',
 			price: price,
 			amount: amount,
+			cashvalue: price * amount,
 			stock: stockname
 		}
 	} 
 	else if (command.action === 'SELL_QUANTITY') {
 	
-
-
 		var sellAmount = command.args[0];		
 		var stockname = command.args[1];
 		var currentHolding = findStockHoldingFromPortfolio(stockname, account.stocks);
@@ -153,15 +160,19 @@ function transformCommandIntoPortfolioEvents(command, stockData, account) {
 		if (!currentHolding) return null;
 
 		var amount = currentHolding.amount;
+		var stocksleft = amount - sellAmount;
 
 		if (amount < sellAmount) {
 			sellAmount = amount;
+			stocksleft = 0;
 		}
+		updateStockHolding(account, stockname, stocksleft);
 		addToAccountCash(account, price*sellAmount);
 		return {
 			event: 'SELL_QUANTITY',
 			price: price,
 			amount: sellAmount,
+			cashvalue: price * sellAmount,
 			stock: stockname
 		}
 	}
@@ -171,6 +182,7 @@ function transformCommandIntoPortfolioEvents(command, stockData, account) {
 
 		var buyAmount = command.args[0];		
 		var stockname = command.args[1];
+		var currentHolding = findStockHoldingFromPortfolio(stockname, account.stocks);
 
 		var price = stockData[stockname].current;
 
@@ -181,11 +193,21 @@ function transformCommandIntoPortfolioEvents(command, stockData, account) {
 			// Not enough money, account was not substracted
 			return null;
 		}
-
+		// Update portfolio by adding stock papers to this stock
+		var newAmount;
+		if (currentHolding) {
+			// Already owned some papers of this stock
+			newAmount = currentHolding.amount + buyAmount;
+		} else {
+			newAmount = buyAmount;
+		}
+		
+		updateStockHolding(account, stockname, newAmount);
 		return {
 			event: 'BUY_QUANTITY',
 			price: price,
 			amount: buyAmount,
+			cashvalue: price * buyAmount,
 			stock: stockname
 		}
 	}	
@@ -212,6 +234,35 @@ function subtractFromAccountCash(account, cash) {
 	if (account.cash < cash) return false;
 	account.cash = account.cash - cash;
 	return true;
+}
+
+function updateStockHolding(account, stockname, newAmount) {
+	var stocks = account.stocks;
+	if (newAmount === 0) {
+		// Remove the stock from holdings array altogether
+		return _.remove(stocks, function(stock) {
+			return stock.name === stockname;
+		})
+	}
+	// Find the holding and update amount 
+	var holding = _.find(stocks, function(stock) {
+		return stock.name === stockname;
+	});
+
+	if (holding) {
+		// Update the amount
+		holding.amount = newAmount;
+	} else {
+		// Not owning any papers yet
+		stocks.push({
+			name: stockname,
+			amount: newAmount
+		});
+		console.log("Stocks now");
+		console.log(stocks);
+	}
+
+	
 }
 
 
